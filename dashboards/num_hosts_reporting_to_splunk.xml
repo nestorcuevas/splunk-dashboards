@@ -1,0 +1,139 @@
+<form>
+  <label>Num Hosts Reporting to Splunk</label>
+  <fieldset submitButton="true" autoRun="false">
+    <input type="time" token="field1" searchWhenChanged="true">
+      <label></label>
+      <default>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+    <input type="text" token="filter_sourcetype" searchWhenChanged="true">
+      <label>Sourcetype Filter</label>
+      <default>*</default>
+      <initialValue>*</initialValue>
+    </input>
+    <input type="text" token="filter_index" searchWhenChanged="true">
+      <label>Index Filter</label>
+      <default>*</default>
+      <initialValue>*</initialValue>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <chart>
+        <title>Num Hosts Sending to Splunk</title>
+        <search>
+          <query>index=main sourcetype=sda-num-hosts NOT other 
+
+| timechart span=1h max(num_hosts)
+
+| reverse 
+| streamstats count AS _serial 
+| search _serial &gt; 1 
+| fields - _serial 
+| reverse</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+        </search>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.axisTitleY.text">Num Hosts</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.showDataLabels">all</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.legend.placement">none</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Hosts by Sourcetype</title>
+      <chart>
+        <search>
+          <query>index=main sourcetype=sda-num-sourcetypes NOT other 
+| timechart span=1h max(*) 
+| fields - "max(date*" "max(time*" max(info_max_time) max(info_min_time) max(info_search_time) max(search_now) max(line_count) max(sda_num_*) max(linecount) max(json) 
+| foreach max(*) 
+    [ rename "&lt;&lt;FIELD&gt;&gt;" to "&lt;&lt;MATCHSTR&gt;&gt;" 
+        ] 
+| fields _time *$filter_sourcetype$*
+
+| reverse 
+| streamstats count AS _serial 
+| search _serial &gt; 1 
+| fields - _serial 
+| reverse</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.axisTitleY.text">Num Hosts</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.abbreviation">none</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.abbreviation">none</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.abbreviation">none</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.showDataLabels">all</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.mode">standard</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="charting.lineWidth">2</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <chart>
+        <title>Hosts by Index</title>
+        <search>
+          <query>index=main sourcetype=sda-num-indexes NOT other 
+| timechart span=1h max(*) 
+| fields - "max(date*" "max(time*" max(info_max_time) max(info_min_time) max(info_search_time) max(search_now) max(line_count) max(sda_num_*) max(linecount) max(json) 
+| foreach max(*) 
+    [ rename "&lt;&lt;FIELD&gt;&gt;" to "&lt;&lt;MATCHSTR&gt;&gt;" 
+        ] 
+| fields _time *$filter_index$*
+
+| reverse 
+| streamstats count AS _serial 
+| search _serial &gt; 1 
+| fields - _serial 
+| reverse</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+        </search>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.axisTitleY.text">Num Hosts</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.showDataLabels">all</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+  </row>
+</form>

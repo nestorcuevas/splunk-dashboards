@@ -1,0 +1,83 @@
+<dashboard>
+  <label>Fortinet Timezone report</label>
+  <row>
+    <panel>
+      <title>Unique Hosts Reporting In Over the Last 24 Hours</title>
+      <chart>
+        <search>
+          <query>| tstats count WHERE index=sec_cmcs_fw_fortinet by _time host span=1h |timechart span=1h dc(host) AS "Num Hosts"</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.abbreviation">none</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.abbreviation">none</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.abbreviation">none</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.showDataLabels">all</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.mode">standard</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="charting.lineWidth">2</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Timezone difference between latest event and UTC</title>
+      <table>
+        <search>
+          <query>| tstats latest(_time) AS _time where index=sec_cmcs_fw_fortinet by host 
+| eval utc_diff=now() - _time 
+| rex field=host ".*-(?&lt;location&gt;[a-z][a-z])-" 
+| eval location=case(like(host, "%-chennai-%"), "chennai", like(host, "%-cmcdccn-%"), "co", like(host, "%-uk"), "uk", like(host, "%-fr"), "fr", like(host, "%-nj"), "nj", true(), location) 
+| eval tz=case(location == "il", "-0600 CST", location == "co", "-0700 MST", location == "ne", "-0600 CST", location == "va", "-0500 EST", location == "pa", "-0500 EST", location == "md", "-0500 EST", location == "nj", "-0500 EST", location == "mn", "-0600 CST", location == "wa", "-0800 PST", location == "or", "-0800 PST", location == "tn", "-0600 CST", location == "fl", "-0500 EST", location == "ga", "-0500 EST", location == "ut", "-0700 MST", location == "tx", "-0600 CST", location == "ma", "-0500 EST", location == "mi", "-0500 EST", location == "ca", "-0700 PST", location == "chennai", "+0530 IST", location == "uk", "-0000 UTC", location == "fr", "+0100 CET", location == "nm", "-0700 MST") 
+| eval utc_diff_h = round(utc_diff / 3600, 0) 
+| eval status=case(utc_diff_h == 0, "OK", tz == "-0500 EST" AND utc_diff_h == 5, "EST (local time)", tz == "-0500 EST" AND utc_diff_h != 5, "WRONG", tz != "-0500 EST" AND utc_diff_h == 5, "WRONG", tz == "-0600 CST" AND utc_diff_h == 6, "CST (local time)", tz == "-0600 CST" AND utc_diff_h != 6, "WRONG", tz == "-0700 MST" AND utc_diff_h == 7, "MST (local time)", tz == "-0700 MST" AND utc_diff_h != 7, "WRONG", true(), "OTHER") 
+| eval status_color=case(status == "OK", 0, status == "EST (local time)", 1, like(status, "%local time%"), 2, status == "WRONG", 99, true(), -1)
+| table host tz _time utc_diff utc_diff_h status status_color
+| sort -tz 
+| rename tz to Timezone utc_diff to "UTC Diff Sec" utc_diff_h to "UTC Diff Hours" status to Status</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">100</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+        <format type="color" field="status_color">
+          <colorPalette type="list">[#53A051,#F8BE34,#F1813F,#000000]</colorPalette>
+          <scale type="threshold">1,2,98</scale>
+        </format>
+      </table>
+    </panel>
+  </row>
+</dashboard>

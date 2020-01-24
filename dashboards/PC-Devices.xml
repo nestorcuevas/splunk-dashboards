@@ -1,0 +1,90 @@
+<form theme="dark">
+  <label>PCI-Devices</label>
+  <fieldset submitButton="false">
+    <input type="time" token="field1">
+      <label></label>
+      <default>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>Total PCI Systems</title>
+      <single>
+        <search>
+          <query>| inputlookup PCI_01_01_20.csv
+| eval host=coalesce(FQDN,IP,IPv6,Hostname,NSLookup)
+| search host=*
+| stats dc(host)</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="drilldown">all</option>
+        <option name="refresh.display">progressbar</option>
+        <drilldown>
+          <link target="_blank">search?q=%7C%20inputlookup%20PCI_01_01_20.csv%0A%7C%20eval%20host=coalesce(FQDN,IP,IPv6,Hostname,NSLookup)%0A%7C%20search%20host=*%0A%7C%20stats%20DC(host)%20as%20dc_host%20count%20by%20%22PCI%20Group%22%0A%7C%20sort%20-%20dc_host&amp;earliest=$field1.earliest$&amp;latest=$field1.latest$</link>
+        </drilldown>
+      </single>
+    </panel>
+    <panel>
+      <title>PCI Systems Reporting In</title>
+      <single>
+        <search>
+          <query>| tstats prestats=f count WHERE index=*  by index host
+| eval host=lower(host)
+| lookup PCI_01_01_20.csv IP as host OUTPUTNEW IP as IP_Match Type "PCI Group"
+| lookup PCI_01_01_20.csv FQDN as host OUTPUTNEW FQDN as FQDN_Match Type "PCI Group"
+| lookup PCI_01_01_20.csv Hostname as host OUTPUTNEW Hostname as hostname_Match Type "PCI Group"
+| lookup PCI_01_01_20.csv IPv6 as host OUTPUTNEW IPv6 as IPv6_Match Type "PCI Group"
+| lookup PCI_01_01_20.csv NSLookup as host OUTPUTNEW NSLookup as NSLookup_Match Type "PCI Group"
+| eval Host_new=coalesce(IP_Match,FQDN_Match,hostname_Match,IPv6_Match,NSLookup_Match)
+| search Host_new=*
+| stats dc(Host_new)</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="drilldown">all</option>
+        <option name="refresh.display">progressbar</option>
+        <drilldown>
+          <link target="_blank">search?q=%7C%20tstats%20prestats=f%20count%20WHERE%20index=*%20%20by%20index%20host%0A%7C%20lookup%20PCI_01_01_20.csv%20IP%20as%20host%20OUTPUTNEW%20IP%20as%20IP_Match%20Type%20%20%22PCI%20Group%22%0A%7C%20lookup%20PCI_01_01_20.csv%20FQDN%20as%20host%20OUTPUTNEW%20FQDN%20as%20FQDN_Match%20Type%20%20%20%22PCI%20Group%22%0A%7C%20lookup%20PCI_01_01_20.csv%20Hostname%20as%20host%20OUTPUTNEW%20Hostname%20as%20hostname_Match%20Type%20%20%20%22PCI%20Group%22%0A%7C%20lookup%20PCI_01_01_20.csv%20IPv6%20as%20host%20OUTPUTNEW%20IPv6%20as%20IPv6_Match%20Type%20%20%22PCI%20Group%22%20%20%22PCI%20Group%22%0A%7C%20eval%20Earliest_Time=strftime(Earliest_Time,%22%25Y-%25m-%25d%20%25H:%25M:%25S%22)%20%0A%7C%20eval%20Latest_Time=strftime(Latest_Time,%22%25Y-%25m-%25d%20%25H:%25M:%25S%22)%0A%7C%20eval%20Host_new=coalesce(IP_Match,FQDN_Match,hostname_Match,IPv6_Match)%0A%7C%20search%20Host_new=*%0A%7C%20stats%20dc(Host_new)%20as%20dc_host%20by%20%22PCI%20Group%22%0A%7C%20sort%20-%20dc_host&amp;earliest=$field1.earliest$&amp;latest=$field1.latest$</link>
+        </drilldown>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Reporting Device By Index</title>
+      <table>
+        <search>
+          <query>| tstats prestats=f count WHERE index=*  by index host
+| eval host=lower(host)
+| lookup PCI_01_01_20.csv IP as host OUTPUTNEW IP as IP_Match Type "PCI Group"
+| lookup PCI_01_01_20.csv FQDN as host OUTPUTNEW FQDN as FQDN_Match Type "PCI Group"
+| lookup PCI_01_01_20.csv Hostname as host OUTPUTNEW Hostname as hostname_Match Type "PCI Group"
+| lookup PCI_01_01_20.csv IPv6 as host OUTPUTNEW IPv6 as IPv6_Match Type "PCI Group"
+| lookup PCI_01_01_20.csv NSLookup as host OUTPUTNEW NSLookup as NSLookup_Match Type "PCI Group"
+| eval Host_new=coalesce(IP_Match,FQDN_Match,hostname_Match,IPv6_Match,NSLookup_Match)
+| search Host_new=*
+| stats values("PCI Group") as PCI_Group dc(Host_new) as dc_host by index
+| table PCI_Group index dc_host
+| sort + dc_host</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">100</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+</form>

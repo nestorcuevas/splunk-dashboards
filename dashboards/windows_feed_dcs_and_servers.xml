@@ -1,0 +1,93 @@
+<dashboard theme="dark">
+  <label>Windows Feed DC's and Servers</label>
+  <description>Gig per hour and confirming events id's are filtering out (top 10 talkers)</description>
+  <row>
+    <panel>
+      <title>Gigs Per Hour - Last 3 Days</title>
+      <table>
+        <search>
+          <query>index=_internal source="*metrics.log*" group=per_index_thruput  NOT ((series="_*" OR source="*splunkforwarder*" OR source="*splunkunivers*" )) earliest=-3d
+| search series=sec_cmcs_auth_dc OR series=sec_cmcs_win_server
+| bin _time span=1hour
+| stats sum(kb) AS kb by series _time | eval gb=round(kb/1024/1024,3) | chart sum(gb) AS "Volume in GB" over _time by series | rename series as Index_Name
+| sort - _time</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">20</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+    <panel>
+      <title>DC's Filtered EventID's (Top 10) - Last 8 Hours</title>
+      <table>
+        <search>
+          <query>index=sec_cmcs_auth_dc EventID IN (4662,4634,5447,4658,5150,4656,4690,4661,5058,5061) earliest=-8h
+| bin _time span=1h
+| stats count by EventID _time
+| sort - EventID _time</query>
+          <earliest>-4h@m</earliest>
+          <latest>now</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">20</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+    <panel>
+      <title>Servers Filtered EventID's (Top 10) - Last 8 Hours</title>
+      <table>
+        <search>
+          <query>index="sec_cmcs_win_server"  EventID IN (5158,4663,5145,4634,4670,4673,4674,5061,5058,5447) earliest=-8h
+| bin _time span=1h
+| stats count by EventID _time
+| sort - EventID _time</query>
+          <earliest>-4h@m</earliest>
+          <latest>now</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">20</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+    <panel>
+      <title>DC's Reporting Events &gt;= 23 Hours Old - -4d Using EventID 4625</title>
+      <single>
+        <search>
+          <query>index=sec_cmcs_auth_dc earliest=-4d
+    | eval TimeStamp=_time
+    | eval Delta=_indextime-_time
+    | eval Raw=_raw
+    | rename _indextime as IndexTime
+    | convert ctime(IndexTime)
+    | convert ctime(TimeStamp)
+    | table  TimeStamp IndexTime Delta index sourcetype host Raw
+    | search 
+    | eval Delta=tonumber(Delta)/3600
+    | search Delta &gt;=23
+    | stats dc(host)</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="refresh.display">progressbar</option>
+      </single>
+    </panel>
+  </row>
+</dashboard>

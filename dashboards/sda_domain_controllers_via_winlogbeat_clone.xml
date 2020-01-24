@@ -1,0 +1,156 @@
+<dashboard theme="dark">dashboard theme="dark"&gt;<label>SDA Windows Servers via WinLogBeat</label>
+  <row>
+    <panel>
+      <title>Total Windows Server's On-Boarded</title>
+      <single>
+        <search>
+          <query>| inputlookup CMCS_WIN_SERVER_HOST.csv
+| stats dc(FQDN)</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>a<option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </single>
+    </panel>
+    <panel>
+      <title>Received Logs Last 48 Hours</title>
+      <single>
+        <search>
+          <query>| metadata type=hosts index=sec_cmcs_win_server
+| eval current=now()
+| eval lastHour=relative_time(now(),"-48h")
+| where lastHour &lt; recentTime
+| lookup CMCS_WIN_SERVER_HOST.csv FQDN AS host
+| rename "Host_Type" as match
+| fillnull match value=New_Windows_Server
+| search match=Windows_Server
+| table host
+| stats dc(host)</query>
+          <earliest>-30d@d</earliest>
+          <latest>now</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
+        <option name="rangeValues">[0,30,70,100]</option>
+        <option name="refresh.display">preview</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="underLabel">DC's Sending Logs</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">1</option>
+      </single>
+    </panel>
+    <panel>
+      <title>Haven't Received  Logs in Over 48 Hours</title>
+      <single>
+        <search>
+          <query>| metadata type=hosts index=sec_cmcs_win_server
+| eval current=now()
+| eval lastHour=relative_time(now(),"-48h") 
+| where lastHour &gt; recentTime
+| lookup CMCS_WIN_SERVER_HOST.csv FQDN AS host
+| rename "Host_Type" as match
+| fillnull match value=New_Windows_Server
+| search match=Windows_Server
+| table host
+| stats dc(host)</query>
+          <earliest>-30d@d</earliest>
+          <latest>now</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
+        <option name="refresh.display">progressbar</option>
+      </single>
+    </panel>
+    <panel>
+      <title>Windows Server's  Haven't Reported in</title>
+      <single>
+        <search>
+          <query>| metadata type=hosts index=sec_cmcs_win_server
+| lookup CMCS_WIN_SERVER_HOST.csv FQDN AS host
+| rename "Host_Type" as match
+| fillnull match value=New_Windows_Server
+| search match!=New_Windows_Server
+| eval isReporting=1
+| append [| inputlookup CMCS_WIN_SERVER_HOST.csv
+| eval isReporting=2 ]
+| eval FQDN=coalesce(FQDN,host)
+| stats count(isReporting) by FQDN
+| rename count(isReporting) AS count
+| where count=1 
+| table FQDN 
+| stats DC(FQDN)</query>
+          <earliest>-30d@d</earliest>
+          <latest>now</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </single>
+    </panel>
+    <panel>
+      <title>Unknown Windows Server's Sending Logs</title>
+      <single>
+        <search>
+          <query>| metadata type=hosts index=sec_cmcs_win_server
+| eval current=now()
+| eval lastHour=relative_time(now(),"-30d") 
+| lookup CMCS_WIN_SERVER_HOST.csv FQDN AS host
+| rename "Host_Type" as match
+| fillnull match value=New_Windows_Server
+| search match=New_Windows_Server
+| table host
+| stats DC(host)</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Hosts Reporting in by Name</title>
+      <table>
+        <search>
+          <query>| metadata type=hosts index=sec_cmcs_win_server
+| eval current=now()
+| eval lastHour=relative_time(now(),"-14d") 
+| where lastHour &lt; recentTime
+| rename totalCount as Count firstTime as "First Event" lastTime as "Last Event" recentTime as "Last Update" 
+| fieldformat Count=tostring(Count, "commas") 
+| fieldformat "First Event"=strftime('First Event', "%c") 
+| fieldformat "Last Event"=strftime('Last Event', "%c") 
+| fieldformat "Last Update"=strftime('Last Update', "%c")
+| fields host "First Event" "Last Update" Count
+| sort - "Count"</query>
+          <earliest>-30d@d</earliest>
+          <latest>now</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">20</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+</dashboard>

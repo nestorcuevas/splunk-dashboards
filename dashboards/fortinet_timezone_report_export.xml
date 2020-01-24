@@ -1,0 +1,31 @@
+<dashboard>
+  <label>Fortinet Timezone Report Export</label>
+  <row>
+    <panel>
+      <table>
+        <search>
+          <query>| tstats latest(_time) AS _time where index=sec_cmcs_fw_fortinet by host 
+| eval utc_diff=now() - _time 
+| rex field=host ".*-(?&lt;location&gt;[a-z][a-z])-" 
+| eval location=case(like(host, "%-chennai-%"), "chennai", like(host, "%-cmcdccn-%"), "co", like(host, "%-uk"), "uk", like(host, "%-fr"), "fr", like(host, "%-nj"), "nj", true(), location) 
+| eval tz=case(location == "il", "-0600 CST", location == "co", "-0700 MST", location == "ne", "-0600 CST", location == "va", "-0500 EST", location == "pa", "-0500 EST", location == "md", "-0500 EST", location == "nj", "-0500 EST", location == "mn", "-0600 CST", location == "wa", "-0800 PST", location == "or", "-0800 PST", location == "tn", "-0600 CST", location == "fl", "-0500 EST", location == "ga", "-0500 EST", location == "ut", "-0700 MST", location == "tx", "-0600 CST", location == "ma", "-0500 EST", location == "mi", "-0500 EST", location == "ca", "-0700 PST", location == "chennai", "+0530 IST", location == "uk", "-0000 UTC", location == "fr", "+0100 CET", location == "nm", "-0700 MST") 
+| eval utc_diff_h = round(utc_diff / 3600, 0) 
+| eval timezone_seen=case(utc_diff_h == 0, "UTC", utc_diff_h == 5, "EST-0500", utc_diff_h == 6, "CST-0600", utc_diff_h == 7, "MST-0700", utc_diff_h == 8, "PST-0800", true(), "OTHER")
+| table host tz timezone_seen 
+| sort -tz 
+| rename tz to "Timezone host is in" utc_diff to "UTC Diff Sec" utc_diff_h to "UTC Diff Hours" timezone_seen to "Timezone of Events from Host"</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">100</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+</dashboard>
