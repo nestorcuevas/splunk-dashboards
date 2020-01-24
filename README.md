@@ -10,5 +10,8 @@
 - `mkdir dashbaords`
 - `tar xfvz file.tgz -C dashboards`
 - `rm file.tgz`
+- `git commit -m "commit message" .`
+- `git push origin`
+
 
 
